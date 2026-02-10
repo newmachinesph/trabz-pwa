@@ -1,6 +1,6 @@
 // API Configuration and Service Layer
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.trabz.ph';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.trabz.ph/api/v1';
 
 // API Client with error handling
 class ApiClient {
@@ -17,9 +17,9 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (token) {
