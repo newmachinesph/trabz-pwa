@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import Cookies from 'js-cookie';
 import { getMe, logout as apiLogout, type User } from './api';
 
 interface AuthContextType {
@@ -22,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
-    const token = localStorage.getItem('access_token');
+    const token = Cookies.get('access_token');
     if (!token) {
       setUser(null);
       setLoading(false);

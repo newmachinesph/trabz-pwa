@@ -1,3 +1,5 @@
+import Cookies from 'js-cookie';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.trabz.ph/api/v1';
 
 class ApiError extends Error {
@@ -10,8 +12,11 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+let isRefreshing = false;
+let refreshPromise: Promise<TokenResponse> | null = null;
+
+async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
+  const token = Cookies.get('access_token');
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -24,6 +29,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   const res = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
 
+  // Auto-refresh on 401
+  if (res.status === 401 && retry && Cookies.get('refresh_token')) {
+    try {
+      await doRefreshToken();
+      return request<T>(endpoint, options, false);
+    } catch {
+      clearTokens();
+      throw new ApiError('Session expired', 401);
+    }
+  }
+
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new ApiError(data?.detail || `Request failed (${res.status})`, res.status, data);
@@ -31,6 +47,45 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (res.status === 204) return null as T;
   return res.json();
+}
+
+function setTokens(access: string, refresh: string) {
+  Cookies.set('access_token', access, { expires: 1, sameSite: 'Lax' });
+  Cookies.set('refresh_token', refresh, { expires: 7, sameSite: 'Lax' });
+}
+
+function clearTokens() {
+  Cookies.remove('access_token');
+  Cookies.remove('refresh_token');
+}
+
+async function doRefreshToken(): Promise<TokenResponse> {
+  if (isRefreshing && refreshPromise) return refreshPromise;
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    const rt = Cookies.get('refresh_token');
+    if (!rt) throw new Error('No refresh token');
+
+    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: rt }),
+    });
+
+    if (!res.ok) throw new Error('Refresh failed');
+
+    const data: TokenResponse = await res.json();
+    setTokens(data.access_token, data.refresh_token);
+    return data;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    isRefreshing = false;
+    refreshPromise = null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -152,8 +207,7 @@ export async function login(email: string, password: string): Promise<TokenRespo
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
-  localStorage.setItem('access_token', data.access_token);
-  localStorage.setItem('refresh_token', data.refresh_token);
+  setTokens(data.access_token, data.refresh_token);
   return data;
 }
 
@@ -167,8 +221,7 @@ export async function registerUser(body: {
     method: 'POST',
     body: JSON.stringify({ ...body, role: 'worker' }),
   });
-  localStorage.setItem('access_token', data.access_token);
-  localStorage.setItem('refresh_token', data.refresh_token);
+  setTokens(data.access_token, data.refresh_token);
   return data;
 }
 
@@ -202,20 +255,11 @@ export async function verifyOtp(phoneNumber: string, otpCode: string): Promise<O
 }
 
 export async function refreshToken(): Promise<TokenResponse> {
-  const rt = localStorage.getItem('refresh_token');
-  if (!rt) throw new Error('No refresh token');
-  const data = await request<TokenResponse>('/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify({ refresh_token: rt }),
-  });
-  localStorage.setItem('access_token', data.access_token);
-  localStorage.setItem('refresh_token', data.refresh_token);
-  return data;
+  return doRefreshToken();
 }
 
 export function logout() {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+  clearTokens();
 }
 
 export async function getMe(): Promise<User> {

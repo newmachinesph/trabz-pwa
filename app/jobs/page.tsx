@@ -176,24 +176,7 @@ export default function Jobs() {
                       </div>
                     </div>
 
-                    <div className="mt-3">
-                      <p className="text-sm font-semibold text-blue-600">{formatSalary(job.salary_min, job.salary_max)}/month</p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4">
-                      <span className="text-xs text-gray-400">{timeAgo(job.posted_at)}</span>
-                      {appliedIds.has(job.id) ? (
-                        <span className="text-sm font-medium text-green-600">Applied</span>
-                      ) : (
-                        <button
-                          onClick={() => handleApply(job.id)}
-                          disabled={applyingId === job.id}
-                          className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300"
-                        >
-                          {applyingId === job.id ? 'Applying...' : 'Apply Now'}
-                        </button>
-                      )}
-                    </div>
+                    <p className="mt-3 text-sm font-semibold text-blue-600">{formatSalary(job.salary_min, job.salary_max)}/month</p>
                   </div>
 
                   <button className="ml-2 p-2 text-gray-400 hover:text-blue-600">
@@ -201,6 +184,21 @@ export default function Jobs() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                     </svg>
                   </button>
+                </div>
+
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-400">{timeAgo(job.posted_at)}</span>
+                  {appliedIds.has(job.id) ? (
+                    <span className="text-sm font-medium text-green-600">Applied</span>
+                  ) : (
+                    <button
+                      onClick={() => handleApply(job.id)}
+                      disabled={applyingId === job.id}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300"
+                    >
+                      {applyingId === job.id ? 'Applying...' : 'Apply Now'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
