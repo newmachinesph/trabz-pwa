@@ -204,10 +204,17 @@ export interface Performance {
 // Auth
 // ---------------------------------------------------------------------------
 
-export async function login(email: string, password: string): Promise<TokenResponse> {
+export async function login(emailOrPhone: string, password: string): Promise<TokenResponse> {
+  // Detect if input is phone number (starts with 0 or +, or contains only digits)
+  const isPhone = /^[0-9+]/.test(emailOrPhone) || /^[0-9]+$/.test(emailOrPhone);
+
+  const body = isPhone
+    ? { phone: emailOrPhone, password }
+    : { email: emailOrPhone, password };
+
   const data = await request<TokenResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(body),
   });
   setTokens(data.access_token, data.refresh_token);
   return data;
