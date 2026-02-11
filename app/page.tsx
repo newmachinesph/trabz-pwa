@@ -7,9 +7,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-6xl font-bold text-blue-600 mb-4">
-            Trabz
-          </h1>
+          <img src="/logo.svg" alt="Trabz" className="h-12 mx-auto mb-4" />
           <p className="text-xl text-gray-700">
             Jobs & Gigs for Filipino Workers
           </p>

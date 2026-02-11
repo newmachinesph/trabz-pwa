@@ -29,7 +29,7 @@ export default function Login() {
       <div className="flex-1 flex flex-col justify-center px-6 pb-20">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-600">Trabz</h1>
+          <img src="/logo.svg" alt="Trabz" className="h-10 mx-auto mb-2" />
           <p className="text-gray-600 mt-2">Welcome back!</p>
         </div>
 
