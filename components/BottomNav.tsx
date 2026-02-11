@@ -10,11 +10,11 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-[428px] mx-auto bg-white border-t border-gray-200 safe-area-bottom">
-      <div className="flex justify-around items-center h-16">
+      <div className="flex justify-around items-center h-16 px-2">
         <Link
           href="/dashboard"
-          className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/dashboard') ? 'text-blue-600' : 'text-gray-600'
+          className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-colors ${
+            isActive('/dashboard') ? 'text-blue-600' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,8 +25,8 @@ export default function BottomNav() {
 
         <Link
           href="/jobs"
-          className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/jobs') ? 'text-blue-600' : 'text-gray-600'
+          className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-colors ${
+            isActive('/jobs') ? 'text-blue-600' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,8 +37,8 @@ export default function BottomNav() {
 
         <Link
           href="/gigs"
-          className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/gigs') ? 'text-blue-600' : 'text-gray-600'
+          className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-colors ${
+            isActive('/gigs') ? 'text-blue-600' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,8 +49,8 @@ export default function BottomNav() {
 
         <Link
           href="/wallet"
-          className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/wallet') ? 'text-blue-600' : 'text-gray-600'
+          className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-colors ${
+            isActive('/wallet') ? 'text-blue-600' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,8 +61,8 @@ export default function BottomNav() {
 
         <Link
           href="/profile"
-          className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/profile') ? 'text-blue-600' : 'text-gray-600'
+          className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-colors ${
+            isActive('/profile') ? 'text-blue-600' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
