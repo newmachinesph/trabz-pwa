@@ -86,7 +86,19 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-6">
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+          <div className="relative flex justify-center text-sm"><span className="bg-gradient-to-br from-blue-50 via-white to-yellow-50 px-4 text-gray-500">or</span></div>
+        </div>
+
+        <Link
+          href="/dashboard"
+          className="w-full flex items-center justify-center py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Continue as Guest
+        </Link>
+
+        <p className="text-center text-sm text-gray-600 mt-4">
           Don&apos;t have an account?{' '}
           <Link href="/register" className="text-blue-600 font-medium hover:text-blue-700">Sign up free</Link>
         </p>

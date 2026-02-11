@@ -159,8 +159,8 @@ export async function login(email: string, password: string): Promise<TokenRespo
 
 export async function registerUser(body: {
   name: string;
-  email: string;
-  phone?: string;
+  phone: string;
+  email?: string;
   password: string;
 }): Promise<TokenResponse> {
   const data = await request<TokenResponse>('/auth/register', {
@@ -170,6 +170,35 @@ export async function registerUser(body: {
   localStorage.setItem('access_token', data.access_token);
   localStorage.setItem('refresh_token', data.refresh_token);
   return data;
+}
+
+// ---------------------------------------------------------------------------
+// OTP
+// ---------------------------------------------------------------------------
+
+export interface OtpSendResponse {
+  status: string;
+  expires_in: number;
+  sms_status: string;
+}
+
+export interface OtpVerifyResponse {
+  status: string;
+  message: string;
+}
+
+export async function sendOtp(phoneNumber: string): Promise<OtpSendResponse> {
+  return request<OtpSendResponse>('/otp/send', {
+    method: 'POST',
+    body: JSON.stringify({ phone_number: phoneNumber }),
+  });
+}
+
+export async function verifyOtp(phoneNumber: string, otpCode: string): Promise<OtpVerifyResponse> {
+  return request<OtpVerifyResponse>('/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify({ phone_number: phoneNumber, otp_code: otpCode }),
+  });
 }
 
 export async function refreshToken(): Promise<TokenResponse> {

@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { getMyApplications, getMyPerformance, type ApplicationListResponse, type Performance } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 export default function Dashboard() {
-  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [apps, setApps] = useState<ApplicationListResponse | null>(null);
   const [performance, setPerformance] = useState<Performance | null>(null);
@@ -16,7 +14,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push('/login');
+      setLoading(false);
       return;
     }
 
@@ -33,9 +31,10 @@ export default function Dashboard() {
       }
     };
     load();
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   const firstName = user?.name?.split(' ')[0] || 'there';
+  const isGuest = !user;
 
   if (authLoading || loading) {
     return (
@@ -58,8 +57,8 @@ export default function Dashboard() {
       <div className="bg-blue-600 text-white p-6 rounded-b-3xl shadow-lg">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-sm opacity-90">Welcome back,</p>
-            <h1 className="text-2xl font-bold mt-1">{firstName}!</h1>
+            <p className="text-sm opacity-90">{isGuest ? 'Welcome to' : 'Welcome back,'}</p>
+            <h1 className="text-2xl font-bold mt-1">{isGuest ? 'Trabz' : `${firstName}!`}</h1>
           </div>
           <button className="bg-white/20 p-2 rounded-full">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,17 +67,31 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-xs opacity-90">Active Applications</p>
-            <p className="text-3xl font-bold mt-1">{apps?.total ?? 0}</p>
+        {/* Quick Stats or Sign-up CTA */}
+        {isGuest ? (
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mt-6">
+            <p className="text-sm opacity-90">Sign up to track applications, earn badges, and get paid for gigs.</p>
+            <div className="flex space-x-3 mt-3">
+              <Link href="/register" className="flex-1 bg-white text-blue-600 py-2 rounded-lg text-sm font-semibold text-center hover:bg-blue-50 transition-colors">
+                Sign Up Free
+              </Link>
+              <Link href="/login" className="flex-1 bg-white/20 text-white py-2 rounded-lg text-sm font-semibold text-center hover:bg-white/30 transition-colors">
+                Log In
+              </Link>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-xs opacity-90">Completion Rate</p>
-            <p className="text-3xl font-bold mt-1">{performance ? `${Math.round(performance.completion_rate)}%` : '--'}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mt-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <p className="text-xs opacity-90">Active Applications</p>
+              <p className="text-3xl font-bold mt-1">{apps?.total ?? 0}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <p className="text-xs opacity-90">Completion Rate</p>
+              <p className="text-3xl font-bold mt-1">{performance ? `${Math.round(performance.completion_rate)}%` : '--'}</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -127,8 +140,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Performance Summary */}
-      {performance && (
+      {/* Performance Summary - logged in only */}
+      {!isGuest && performance && (
         <div className="p-4">
           <h2 className="text-lg font-bold text-gray-900 mb-3">Your Performance</h2>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -162,8 +175,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Applications */}
-      {apps && apps.items.length > 0 && (
+      {/* Recent Applications - logged in only */}
+      {!isGuest && apps && apps.items.length > 0 && (
         <div className="p-4 pb-20">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-lg font-bold text-gray-900">Recent Applications</h2>
