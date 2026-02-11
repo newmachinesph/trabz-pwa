@@ -66,6 +66,10 @@ export default function Jobs() {
     return `Up to ${fmt(max!)}`;
   };
 
+  const getSalaryPeriod = (jobType: string) => {
+    return jobType === 'gig' ? '/shift' : '/month';
+  };
+
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const days = Math.floor(diff / 86400000);
@@ -135,7 +139,7 @@ export default function Jobs() {
               {/* Salary */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm font-medium text-gray-500 mb-1">Salary Range</p>
-                <p className="text-2xl font-bold text-blue-600">{formatSalary(selectedJob.salary_min, selectedJob.salary_max)}/month</p>
+                <p className="text-2xl font-bold text-blue-600">{formatSalary(selectedJob.salary_min, selectedJob.salary_max)}{getSalaryPeriod(selectedJob.job_type)}</p>
               </div>
 
               {/* Description */}
@@ -310,7 +314,7 @@ export default function Jobs() {
                       </div>
                     </div>
 
-                    <p className="mt-3 text-sm font-semibold text-blue-600">{formatSalary(job.salary_min, job.salary_max)}/month</p>
+                    <p className="mt-3 text-sm font-semibold text-blue-600">{formatSalary(job.salary_min, job.salary_max)}{getSalaryPeriod(job.job_type)}</p>
                   </div>
 
                   <button
