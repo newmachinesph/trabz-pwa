@@ -21,6 +21,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -150,6 +152,156 @@ export default function Register() {
   const maskedPhone = phone.replace(/(\d{4})\d{3}(\d{4})/, '$1***$2');
 
   return (
+    <>
+      {/* Terms of Service Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-20" onClick={() => setShowTermsModal(false)}>
+          <div
+            className="bg-white rounded-t-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto animate-slide-up shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Terms of Service</h2>
+                <button
+                  onClick={() => setShowTermsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="px-6 py-6 space-y-4 text-sm text-gray-700">
+              <p className="text-gray-500 italic">Last updated: February 12, 2026</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">1. Acceptance of Terms</h3>
+              <p>By accessing and using Trabz, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">2. Use of Service</h3>
+              <p>Trabz provides a platform connecting Filipino workers with jobs and gigs. You agree to:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Provide accurate and complete information</li>
+                <li>Maintain the security of your account</li>
+                <li>Not use the platform for illegal activities</li>
+                <li>Not misrepresent your qualifications or experience</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">3. User Accounts</h3>
+              <p>You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">4. Platform Fees</h3>
+              <p>Trabz is 100% free for Filipino workers. We do not charge any fees for job applications, skill-building courses, or standard platform features.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">5. Payments</h3>
+              <p>All payments for completed work are processed securely through our platform. Workers are responsible for accurate reporting of income for tax purposes.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">6. Termination</h3>
+              <p>We reserve the right to terminate or suspend your account at our sole discretion for violations of these Terms of Service or fraudulent activity.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">7. Changes to Terms</h3>
+              <p>We may modify these terms at any time. Continued use of the platform constitutes acceptance of modified terms.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">8. Contact</h3>
+              <p>For questions about these Terms of Service, contact us at support@trabz.ph</p>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-4">
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-20" onClick={() => setShowPrivacyModal(false)}>
+          <div
+            className="bg-white rounded-t-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto animate-slide-up shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Privacy Policy</h2>
+                <button
+                  onClick={() => setShowPrivacyModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="px-6 py-6 space-y-4 text-sm text-gray-700">
+              <p className="text-gray-500 italic">Last updated: February 12, 2026</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">1. Information We Collect</h3>
+              <p>We collect information you provide directly to us, including:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Name, phone number, and email address</li>
+                <li>Profile information and resume data</li>
+                <li>Work history and skills</li>
+                <li>Payment information</li>
+                <li>Communications with us</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">2. How We Use Your Information</h3>
+              <p>We use your information to:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Provide, maintain, and improve our services</li>
+                <li>Connect you with job opportunities</li>
+                <li>Process payments and transactions</li>
+                <li>Send you updates and notifications</li>
+                <li>Prevent fraud and enhance security</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">3. Information Sharing</h3>
+              <p>We do not sell your personal information. We may share your information with:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Employers when you apply for jobs</li>
+                <li>Service providers who assist our operations</li>
+                <li>Law enforcement when required by law</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">4. Data Security</h3>
+              <p>We implement appropriate security measures to protect your personal information. However, no method of transmission over the internet is 100% secure.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">5. Your Rights</h3>
+              <p>You have the right to:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Access your personal information</li>
+                <li>Correct inaccurate data</li>
+                <li>Request deletion of your data</li>
+                <li>Opt-out of marketing communications</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">6. Cookies</h3>
+              <p>We use cookies and similar technologies to enhance your experience and analyze platform usage.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">7. Changes to Privacy Policy</h3>
+              <p>We may update this Privacy Policy. We will notify you of significant changes via email or platform notification.</p>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">8. Contact</h3>
+              <p>For privacy-related questions, contact us at privacy@trabz.ph</p>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-4">
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 flex flex-col">
       <div className="p-6">
         {step === 'phone' ? (
@@ -345,7 +497,7 @@ export default function Register() {
             <div className="flex items-start">
               <input id="terms" type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500" required />
               <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-                I agree to Trabz&apos;s <Link href="/terms" className="text-blue-600 hover:text-blue-700">Terms of Service</Link> and <Link href="/privacy" className="text-blue-600 hover:text-blue-700">Privacy Policy</Link>
+                I agree to Trabz&apos;s <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-600 hover:text-blue-700 underline">Terms of Service</button> and <button type="button" onClick={() => setShowPrivacyModal(true)} className="text-blue-600 hover:text-blue-700 underline">Privacy Policy</button>
               </label>
             </div>
 
@@ -356,5 +508,6 @@ export default function Register() {
         )}
       </div>
     </div>
+    </>
   );
 }
