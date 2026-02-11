@@ -80,9 +80,9 @@ export default function Jobs() {
     <div className="min-h-screen bg-gray-50">
       {/* Job Detail Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50" onClick={() => setSelectedJob(null)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-20" onClick={() => setSelectedJob(null)}>
           <div
-            className="bg-white rounded-t-3xl w-full max-h-[85vh] overflow-y-auto animate-slide-up"
+            className="bg-white rounded-t-3xl w-full max-w-2xl max-h-[80vh] overflow-y-auto animate-slide-up shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
