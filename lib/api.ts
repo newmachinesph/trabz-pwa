@@ -108,6 +108,8 @@ export interface User {
   location: string | null;
   bio: string | null;
   skills: string[] | null;
+  resume_url: string | null;
+  resume_data: any | null;
   created_at: string;
   updated_at: string;
 }
@@ -268,6 +270,13 @@ export async function getMe(): Promise<User> {
 
 export async function updateMe(body: Partial<User>): Promise<User> {
   return request<User>('/users/me', { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/users/me/password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
 }
 
 // ---------------------------------------------------------------------------
