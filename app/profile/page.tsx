@@ -1,42 +1,89 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+
 export default function Profile() {
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 p-6 animate-pulse">
+          <div className="flex items-center space-x-4">
+            <div className="w-20 h-20 bg-gray-200 rounded-full" />
+            <div className="flex-1">
+              <div className="h-6 bg-gray-200 rounded w-40 mb-2" />
+              <div className="h-4 bg-gray-200 rounded w-48" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = user.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Profile Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="p-6">
           <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              JD
-            </div>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-900">Juan Dela Cruz</h1>
-              <p className="text-sm text-gray-600">juan.delacruz@email.com</p>
-              <div className="flex items-center space-x-2 mt-2">
-                <div className="flex items-center space-x-1">
-                  <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-700">4.8</span>
-                </div>
-                <span className="text-sm text-gray-500">• 47 reviews</span>
+            {user.avatar_url ? (
+              <img src={user.avatar_url} alt={user.name} className="w-20 h-20 rounded-full object-cover" />
+            ) : (
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                {initials}
               </div>
+            )}
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-gray-900">{user.name}</h1>
+              <p className="text-sm text-gray-600">{user.email || user.phone}</p>
+              {user.location && (
+                <div className="flex items-center space-x-1 mt-1">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="text-sm text-gray-500">{user.location}</span>
+                </div>
+              )}
+              <p className="text-xs text-gray-400 mt-1 capitalize">{user.role}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mt-6">
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-blue-600">23</p>
-              <p className="text-xs text-gray-600 mt-1">Jobs Applied</p>
+          {user.bio && (
+            <p className="text-sm text-gray-600 mt-4">{user.bio}</p>
+          )}
+
+          {user.skills && user.skills.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {user.skills.map((skill) => (
+                <span key={skill} className="bg-blue-50 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
+                  {skill}
+                </span>
+              ))}
             </div>
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">12</p>
-              <p className="text-xs text-gray-600 mt-1">Gigs Done</p>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-purple-600">3</p>
-              <p className="text-xs text-gray-600 mt-1">Certificates</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -184,7 +231,10 @@ export default function Profile() {
 
       {/* Logout */}
       <div className="p-4 pb-20">
-        <button className="w-full bg-white border border-red-300 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors">
+        <button
+          onClick={handleLogout}
+          className="w-full bg-white border border-red-300 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+        >
           Log Out
         </button>
       </div>

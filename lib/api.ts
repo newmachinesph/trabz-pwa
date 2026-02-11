@@ -1,221 +1,250 @@
-// API Configuration and Service Layer
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.trabz.ph/api/v1';
 
-// API Client with error handling
-class ApiClient {
-  private baseURL: string;
-
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
-    }
-  }
-
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' });
-  }
-
-  async post<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async put<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+class ApiError extends Error {
+  status: number;
+  data: unknown;
+  constructor(message: string, status: number, data?: unknown) {
+    super(message);
+    this.status = status;
+    this.data = data;
   }
 }
 
-const apiClient = new ApiClient(API_BASE_URL);
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
-// Auth Services
-export const authService = {
-  login: async (email: string, password: string) => {
-    return apiClient.post('/auth/login', { email, password });
-  },
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
 
-  register: async (data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    password: string;
-  }) => {
-    return apiClient.post('/auth/register', data);
-  },
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
-  logout: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-  },
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
 
-  getCurrentUser: async () => {
-    return apiClient.get('/auth/me');
-  },
-};
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new ApiError(data?.detail || `Request failed (${res.status})`, res.status, data);
+  }
 
-// Jobs Services
-export const jobsService = {
-  getJobs: async (params?: {
-    search?: string;
-    category?: string;
-    location?: string;
-    limit?: number;
-    offset?: number;
-  }) => {
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
-    return apiClient.get(`/jobs?${queryString}`);
-  },
+  if (res.status === 204) return null as T;
+  return res.json();
+}
 
-  getJobById: async (id: string) => {
-    return apiClient.get(`/jobs/${id}`);
-  },
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-  applyForJob: async (jobId: string, applicationData: unknown) => {
-    return apiClient.post(`/jobs/${jobId}/apply`, applicationData);
-  },
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
 
-  getMyApplications: async () => {
-    return apiClient.get('/jobs/applications/me');
-  },
-};
+export interface User {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string;
+  avatar_url: string | null;
+  location: string | null;
+  bio: string | null;
+  skills: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
 
-// Gigs Services
-export const gigsService = {
-  getGigs: async (params?: {
-    category?: string;
-    urgent?: boolean;
-    limit?: number;
-    offset?: number;
-  }) => {
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
-    return apiClient.get(`/gigs?${queryString}`);
-  },
+export interface Job {
+  id: number;
+  company_id: number;
+  posted_by: number;
+  title: string;
+  description: string;
+  category: string;
+  location: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  job_type: string;
+  status: string;
+  posted_at: string;
+  expires_at: string | null;
+  requirements?: string[];
+  benefits?: string[];
+  temp_to_hire?: boolean;
+  instant_pay?: boolean;
+}
 
-  getGigById: async (id: string) => {
-    return apiClient.get(`/gigs/${id}`);
-  },
+export interface JobListResponse {
+  items: Job[];
+  total: number;
+  page: number;
+  page_size: number;
+}
 
-  claimGig: async (gigId: string) => {
-    return apiClient.post(`/gigs/${gigId}/claim`, {});
-  },
+export interface Gig {
+  id: number;
+  company_id: number;
+  posted_by: number;
+  title: string;
+  description: string;
+  category: string;
+  location: string;
+  date: string;
+  shift: string;
+  time_start: string;
+  time_end: string;
+  pay_per_shift: number;
+  slots_total: number;
+  slots_taken: number;
+  urgency: string;
+  status: string;
+  temp_to_hire: boolean;
+  instant_pay: boolean;
+  verified: boolean;
+  rating: number;
+  created_at: string;
+}
 
-  getMyGigs: async () => {
-    return apiClient.get('/gigs/my-gigs');
-  },
-};
+export interface GigListResponse {
+  items: Gig[];
+  total: number;
+  page: number;
+  page_size: number;
+}
 
-// Wallet Services
-export const walletService = {
-  getBalance: async () => {
-    return apiClient.get('/wallet/balance');
-  },
+export interface Application {
+  id: number;
+  job_id: number;
+  worker_id: number;
+  status: string;
+  notes: string | null;
+  applied_at: string;
+  updated_at: string;
+}
 
-  getTransactions: async (params?: {
-    limit?: number;
-    offset?: number;
-    type?: string;
-  }) => {
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
-    return apiClient.get(`/wallet/transactions?${queryString}`);
-  },
+export interface ApplicationListResponse {
+  items: Application[];
+  total: number;
+}
 
-  cashOut: async (data: { amount: number; method: string; account: string }) => {
-    return apiClient.post('/wallet/cashout', data);
-  },
-};
+export interface Performance {
+  id: number;
+  worker_id: number;
+  overall_score: number;
+  level: string;
+  total_shifts: number;
+  completion_rate: number;
+  on_time_rate: number;
+  avg_rating: number;
+  badges: string[] | null;
+  updated_at: string;
+}
 
-// Learning Services
-export const learningService = {
-  getCourses: async (params?: {
-    category?: string;
-    enrolled?: boolean;
-    limit?: number;
-    offset?: number;
-  }) => {
-    const queryString = new URLSearchParams(params as Record<string, string>).toString();
-    return apiClient.get(`/courses?${queryString}`);
-  },
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
 
-  getCourseById: async (id: string) => {
-    return apiClient.get(`/courses/${id}`);
-  },
+export async function login(email: string, password: string): Promise<TokenResponse> {
+  const data = await request<TokenResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('refresh_token', data.refresh_token);
+  return data;
+}
 
-  enrollCourse: async (courseId: string) => {
-    return apiClient.post(`/courses/${courseId}/enroll`, {});
-  },
+export async function registerUser(body: {
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+}): Promise<TokenResponse> {
+  const data = await request<TokenResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ ...body, role: 'worker' }),
+  });
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('refresh_token', data.refresh_token);
+  return data;
+}
 
-  getMyCourses: async () => {
-    return apiClient.get('/courses/enrolled');
-  },
+export async function refreshToken(): Promise<TokenResponse> {
+  const rt = localStorage.getItem('refresh_token');
+  if (!rt) throw new Error('No refresh token');
+  const data = await request<TokenResponse>('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token: rt }),
+  });
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('refresh_token', data.refresh_token);
+  return data;
+}
 
-  updateProgress: async (courseId: string, lessonId: string, progress: number) => {
-    return apiClient.post(`/courses/${courseId}/lessons/${lessonId}/progress`, {
-      progress,
-    });
-  },
-};
+export function logout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
 
-// Profile Services
-export const profileService = {
-  getProfile: async () => {
-    return apiClient.get('/profile');
-  },
+export async function getMe(): Promise<User> {
+  return request<User>('/users/me');
+}
 
-  updateProfile: async (data: unknown) => {
-    return apiClient.put('/profile', data);
-  },
+export async function updateMe(body: Partial<User>): Promise<User> {
+  return request<User>('/users/me', { method: 'PATCH', body: JSON.stringify(body) });
+}
 
-  uploadDocument: async (formData: FormData) => {
-    return fetch(`${API_BASE_URL}/profile/documents`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: formData,
-    }).then((res) => res.json());
-  },
-};
+// ---------------------------------------------------------------------------
+// Jobs
+// ---------------------------------------------------------------------------
 
-export default apiClient;
+export async function listJobs(params?: Record<string, string | number>): Promise<JobListResponse> {
+  const qs = params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : '';
+  return request<JobListResponse>(`/jobs${qs}`);
+}
+
+export async function getJob(id: number): Promise<Job> {
+  return request<Job>(`/jobs/${id}`);
+}
+
+export async function applyForJob(jobId: number, notes?: string): Promise<Application> {
+  return request<Application>(`/applications/jobs/${jobId}`, {
+    method: 'POST',
+    body: JSON.stringify({ notes: notes || null }),
+  });
+}
+
+export async function getMyApplications(params?: Record<string, string | number>): Promise<ApplicationListResponse> {
+  const qs = params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : '';
+  return request<ApplicationListResponse>(`/applications/me${qs}`);
+}
+
+// ---------------------------------------------------------------------------
+// Gigs
+// ---------------------------------------------------------------------------
+
+export async function listGigs(params?: Record<string, string | number>): Promise<GigListResponse> {
+  const qs = params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : '';
+  return request<GigListResponse>(`/gigs${qs}`);
+}
+
+export async function getGig(id: number): Promise<Gig> {
+  return request<Gig>(`/gigs/${id}`);
+}
+
+export async function claimGig(gigId: number): Promise<Gig> {
+  return request<Gig>(`/gigs/${gigId}/claim`, { method: 'POST' });
+}
+
+// ---------------------------------------------------------------------------
+// Performance
+// ---------------------------------------------------------------------------
+
+export async function getMyPerformance(): Promise<Performance> {
+  return request<Performance>('/performance/me');
+}
+
+export { ApiError };
