@@ -49,9 +49,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
   return res.json();
 }
 
+const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
 function setTokens(access: string, refresh: string) {
-  Cookies.set('access_token', access, { expires: 1, sameSite: 'Lax' });
-  Cookies.set('refresh_token', refresh, { expires: 7, sameSite: 'Lax' });
+  Cookies.set('access_token', access, { expires: 1, sameSite: 'Lax', secure: isSecure });
+  Cookies.set('refresh_token', refresh, { expires: 7, sameSite: 'Lax', secure: isSecure });
 }
 
 function clearTokens() {
@@ -98,6 +100,17 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface ResumeData {
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+  summary: string;
+  experience: { title: string; company: string; duration: string; description: string }[];
+  education: { degree: string; school: string; year: string }[];
+  skills: string[];
+}
+
 export interface User {
   id: number;
   name: string;
@@ -109,7 +122,7 @@ export interface User {
   bio: string | null;
   skills: string[] | null;
   resume_url: string | null;
-  resume_data: any | null;
+  resume_data: ResumeData | null;
   created_at: string;
   updated_at: string;
 }
@@ -267,7 +280,14 @@ export async function refreshToken(): Promise<TokenResponse> {
   return doRefreshToken();
 }
 
-export function logout() {
+export async function logout() {
+  const rt = Cookies.get('refresh_token');
+  if (rt) {
+    await request('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: rt }),
+    }).catch(() => {});
+  }
   clearTokens();
 }
 
@@ -287,12 +307,20 @@ export async function changePassword(currentPassword: string, newPassword: strin
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function buildQueryString(params?: Record<string, string | number>): string {
+  if (!params) return '';
+  return '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString();
+}
+
+// ---------------------------------------------------------------------------
 // Jobs
 // ---------------------------------------------------------------------------
 
 export async function listJobs(params?: Record<string, string | number>): Promise<JobListResponse> {
-  const qs = params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : '';
-  return request<JobListResponse>(`/jobs${qs}`);
+  return request<JobListResponse>(`/jobs${buildQueryString(params)}`);
 }
 
 export async function getJob(id: number): Promise<Job> {
@@ -307,8 +335,7 @@ export async function applyForJob(jobId: number, notes?: string): Promise<Applic
 }
 
 export async function getMyApplications(params?: Record<string, string | number>): Promise<ApplicationListResponse> {
-  const qs = params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : '';
-  return request<ApplicationListResponse>(`/applications/me${qs}`);
+  return request<ApplicationListResponse>(`/applications/me${buildQueryString(params)}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -316,8 +343,7 @@ export async function getMyApplications(params?: Record<string, string | number>
 // ---------------------------------------------------------------------------
 
 export async function listGigs(params?: Record<string, string | number>): Promise<GigListResponse> {
-  const qs = params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : '';
-  return request<GigListResponse>(`/gigs${qs}`);
+  return request<GigListResponse>(`/gigs${buildQueryString(params)}`);
 }
 
 export async function getGig(id: number): Promise<Gig> {
@@ -334,6 +360,539 @@ export async function claimGig(gigId: number): Promise<Gig> {
 
 export async function getMyPerformance(): Promise<Performance> {
   return request<Performance>('/performance/me');
+}
+
+// ---------------------------------------------------------------------------
+// Messages
+// ---------------------------------------------------------------------------
+
+export interface Conversation {
+  id: number;
+  employer_id: number;
+  worker_id: number;
+  last_message: string | null;
+  last_message_at: string | null;
+  unread_count: number;
+  created_at: string;
+}
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  content: string;
+  read: boolean;
+  created_at: string;
+}
+
+export async function listConversations(): Promise<Conversation[]> {
+  return request<Conversation[]>('/messages/conversations');
+}
+
+export async function createConversation(employerId: number): Promise<Conversation> {
+  return request<Conversation>('/messages/conversations', {
+    method: 'POST',
+    body: JSON.stringify({ employer_id: employerId }),
+  });
+}
+
+export async function listMessages(conversationId: number, params?: Record<string, string | number>): Promise<Message[]> {
+  return request<Message[]>(`/messages/conversations/${conversationId}/messages${buildQueryString(params)}`);
+}
+
+export async function sendMessage(conversationId: number, content: string): Promise<Message> {
+  return request<Message>(`/messages/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function markConversationRead(conversationId: number): Promise<void> {
+  return request<void>(`/messages/conversations/${conversationId}/read`, { method: 'PATCH' });
+}
+
+// ---------------------------------------------------------------------------
+// KayaScore
+// ---------------------------------------------------------------------------
+
+export interface KayaScoreAssessment {
+  id: number;
+  user_id: number;
+  status: string;
+  domain_scores: Record<string, number> | null;
+  overall_score: number | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface KayaScoreQuestion {
+  id: number;
+  domain: string;
+  trait: string;
+  question_text: string;
+  reverse_scored: boolean;
+}
+
+export async function startKayaScoreAssessment(): Promise<KayaScoreAssessment> {
+  return request<KayaScoreAssessment>('/kayascore/start', { method: 'POST' });
+}
+
+export async function getKayaScoreQuestions(): Promise<KayaScoreQuestion[]> {
+  return request<KayaScoreQuestion[]>('/kayascore/questions');
+}
+
+export async function submitKayaScore(assessmentId: number, responses: { question_id: number; score: number }[]): Promise<KayaScoreAssessment> {
+  return request<KayaScoreAssessment>(`/kayascore/${assessmentId}/submit`, {
+    method: 'POST',
+    body: JSON.stringify({ responses }),
+  });
+}
+
+export async function getMyKayaScores(): Promise<KayaScoreAssessment[]> {
+  return request<KayaScoreAssessment[]>('/kayascore/my-scores');
+}
+
+export async function getKayaScoreBenchmarks(category: string): Promise<{ job_category: string; trait: string; min_score: number; ideal_score: number }[]> {
+  return request(`/kayascore/benchmarks/${encodeURIComponent(category)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Matching
+// ---------------------------------------------------------------------------
+
+export interface JobMatch {
+  job: Job;
+  score: number;
+  breakdown: Record<string, number>;
+}
+
+export interface WorkerPreference {
+  id: number;
+  worker_id: number;
+  preferred_categories: string[];
+  min_salary: number | null;
+}
+
+export async function getJobRecommendations(): Promise<JobMatch[]> {
+  return request<JobMatch[]>('/matching/recommendations');
+}
+
+export async function getJobMatchScore(jobId: number): Promise<{ score: number; breakdown: Record<string, number> }> {
+  return request(`/matching/score/${jobId}`);
+}
+
+export async function updatePreferences(body: { preferred_categories?: string[]; min_salary?: number }): Promise<WorkerPreference> {
+  return request<WorkerPreference>('/matching/preferences', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getPreferences(): Promise<WorkerPreference> {
+  return request<WorkerPreference>('/matching/preferences');
+}
+
+// ---------------------------------------------------------------------------
+// Learning
+// ---------------------------------------------------------------------------
+
+export interface Course {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  duration_hours: number;
+  tesda_aligned: boolean;
+  created_at: string;
+}
+
+export interface CourseModule {
+  id: number;
+  course_id: number;
+  title: string;
+  content: string;
+  order: number;
+}
+
+export interface CourseEnrollment {
+  id: number;
+  user_id: number;
+  course_id: number;
+  progress: number;
+  completed: boolean;
+  enrolled_at: string;
+  completed_at: string | null;
+  course: Course;
+}
+
+export interface Certificate {
+  id: number;
+  user_id: number;
+  course_id: number;
+  certificate_url: string;
+  issued_at: string;
+}
+
+export async function listCourses(params?: Record<string, string | number>): Promise<Course[]> {
+  return request<Course[]>(`/learning/courses${buildQueryString(params)}`);
+}
+
+export async function getCourse(courseId: number): Promise<Course> {
+  return request<Course>(`/learning/courses/${courseId}`);
+}
+
+export async function getCourseModules(courseId: number): Promise<CourseModule[]> {
+  return request<CourseModule[]>(`/learning/courses/${courseId}/modules`);
+}
+
+export async function enrollInCourse(courseId: number): Promise<CourseEnrollment> {
+  return request<CourseEnrollment>('/learning/enroll', {
+    method: 'POST',
+    body: JSON.stringify({ course_id: courseId }),
+  });
+}
+
+export async function updateCourseProgress(enrollmentId: number, progress: number): Promise<CourseEnrollment> {
+  return request<CourseEnrollment>(`/learning/progress/${enrollmentId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ progress }),
+  });
+}
+
+export async function getMyCourses(): Promise<CourseEnrollment[]> {
+  return request<CourseEnrollment[]>('/learning/my-courses');
+}
+
+export async function getMyCertificates(): Promise<Certificate[]> {
+  return request<Certificate[]>('/learning/my-certificates');
+}
+
+// ---------------------------------------------------------------------------
+// OFW
+// ---------------------------------------------------------------------------
+
+export interface OFWProfile {
+  id: number;
+  user_id: number;
+  destination_country: string | null;
+  agency: string | null;
+  contract_terms: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface ContractScan {
+  id: number;
+  user_id: number;
+  document_url: string;
+  scan_results: Record<string, unknown> | null;
+  risk_flags: string[] | null;
+  created_at: string;
+}
+
+export interface RemittanceRecord {
+  id: number;
+  user_id: number;
+  amount: number;
+  currency: string;
+  recipient_name: string;
+  provider: string;
+  status: string;
+  created_at: string;
+}
+
+export async function getOFWProfile(): Promise<OFWProfile> {
+  return request<OFWProfile>('/ofw/profile');
+}
+
+export async function updateOFWProfile(body: Partial<OFWProfile>): Promise<OFWProfile> {
+  return request<OFWProfile>('/ofw/profile', { method: 'PUT', body: JSON.stringify(body) });
+}
+
+export async function submitContractScan(documentUrl: string): Promise<ContractScan> {
+  return request<ContractScan>('/ofw/contract-scan', {
+    method: 'POST',
+    body: JSON.stringify({ document_url: documentUrl }),
+  });
+}
+
+export async function getContractScans(): Promise<ContractScan[]> {
+  return request<ContractScan[]>('/ofw/contract-scans');
+}
+
+export async function logRemittance(body: { amount: number; currency: string; recipient_name: string; provider: string }): Promise<RemittanceRecord> {
+  return request<RemittanceRecord>('/ofw/remittance', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getRemittances(): Promise<{ records: RemittanceRecord[]; total_sent: number }> {
+  return request('/ofw/remittances');
+}
+
+export async function sendSOS(): Promise<{ emergency_numbers: Record<string, string>; status: string }> {
+  return request('/ofw/sos', { method: 'POST' });
+}
+
+// ---------------------------------------------------------------------------
+// Wallet
+// ---------------------------------------------------------------------------
+
+export interface Wallet {
+  id: number;
+  user_id: number;
+  balance: number;
+  currency: string;
+  created_at: string;
+}
+
+export interface WalletTransaction {
+  id: number;
+  wallet_id: number;
+  amount: number;
+  transaction_type: string;
+  description: string | null;
+  balance_after: number;
+  created_at: string;
+}
+
+export interface EWARequest {
+  id: number;
+  user_id: number;
+  amount_requested: number;
+  amount_approved: number | null;
+  fee_amount: number | null;
+  status: string;
+  created_at: string;
+}
+
+export interface MicroLoan {
+  id: number;
+  user_id: number;
+  amount: number;
+  interest_rate: number;
+  status: string;
+  amount_repaid: number;
+  created_at: string;
+}
+
+export async function initWallet(): Promise<Wallet> {
+  return request<Wallet>('/wallet/init', { method: 'POST' });
+}
+
+export async function getWalletBalance(): Promise<{ wallet: Wallet; pending_ewa: number; active_loans: number }> {
+  return request('/wallet/balance');
+}
+
+export async function getWalletTransactions(params?: Record<string, string | number>): Promise<WalletTransaction[]> {
+  return request<WalletTransaction[]>(`/wallet/transactions${buildQueryString(params)}`);
+}
+
+export async function requestEWA(amount: number): Promise<EWARequest> {
+  return request<EWARequest>('/wallet/ewa/request', {
+    method: 'POST',
+    body: JSON.stringify({ amount_requested: amount }),
+  });
+}
+
+export async function getEWAHistory(): Promise<EWARequest[]> {
+  return request<EWARequest[]>('/wallet/ewa/history');
+}
+
+export async function applyForLoan(amount: number): Promise<MicroLoan> {
+  return request<MicroLoan>('/wallet/loan/apply', {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
+  });
+}
+
+export async function getLoanHistory(): Promise<MicroLoan[]> {
+  return request<MicroLoan[]>('/wallet/loan/history');
+}
+
+// ---------------------------------------------------------------------------
+// Safety
+// ---------------------------------------------------------------------------
+
+export interface ScamReport {
+  id: number;
+  reporter_id: number;
+  reported_entity: string;
+  entity_type: string;
+  description: string;
+  evidence_urls: string[] | null;
+  status: string;
+  created_at: string;
+}
+
+export interface Dispute {
+  id: number;
+  complainant_id: number;
+  respondent_id: number;
+  dispute_type: string;
+  description: string;
+  status: string;
+  resolution: string | null;
+  created_at: string;
+}
+
+export interface VerificationRequest {
+  id: number;
+  user_id: number;
+  document_type: string;
+  document_url: string;
+  status: string;
+  reviewer_notes: string | null;
+  created_at: string;
+}
+
+export async function reportScam(body: { reported_entity: string; entity_type: string; description: string; evidence_urls?: string[] }): Promise<ScamReport> {
+  return request<ScamReport>('/safety/report', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getMyReports(): Promise<ScamReport[]> {
+  return request<ScamReport[]>('/safety/my-reports');
+}
+
+export async function fileDispute(body: { respondent_id: number; dispute_type: string; description: string }): Promise<Dispute> {
+  return request<Dispute>('/safety/dispute', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getMyDisputes(): Promise<Dispute[]> {
+  return request<Dispute[]>('/safety/my-disputes');
+}
+
+export async function submitVerification(body: { document_type: string; document_url: string }): Promise<VerificationRequest> {
+  return request<VerificationRequest>('/safety/verify', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getMyVerifications(): Promise<VerificationRequest[]> {
+  return request<VerificationRequest[]>('/safety/my-verifications');
+}
+
+// ---------------------------------------------------------------------------
+// Community
+// ---------------------------------------------------------------------------
+
+export interface TradeGroup {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  member_count: number;
+  created_at: string;
+}
+
+export interface GroupMembership {
+  id: number;
+  group_id: number;
+  user_id: number;
+  joined_at: string;
+  group: TradeGroup;
+}
+
+export interface Referral {
+  id: number;
+  referrer_id: number;
+  referred_id: number | null;
+  referral_code: string;
+  status: string;
+  reward_amount: number | null;
+  created_at: string;
+}
+
+export async function listTradeGroups(params?: Record<string, string | number>): Promise<TradeGroup[]> {
+  return request<TradeGroup[]>(`/community/groups${buildQueryString(params)}`);
+}
+
+export async function getTradeGroup(groupId: number): Promise<TradeGroup> {
+  return request<TradeGroup>(`/community/groups/${groupId}`);
+}
+
+export async function joinTradeGroup(groupId: number): Promise<GroupMembership> {
+  return request<GroupMembership>(`/community/groups/${groupId}/join`, { method: 'POST' });
+}
+
+export async function leaveTradeGroup(groupId: number): Promise<void> {
+  return request<void>(`/community/groups/${groupId}/leave`, { method: 'DELETE' });
+}
+
+export async function getMyGroups(): Promise<GroupMembership[]> {
+  return request<GroupMembership[]>('/community/my-groups');
+}
+
+export async function createReferral(): Promise<Referral> {
+  return request<Referral>('/community/referral', { method: 'POST' });
+}
+
+export async function getMyReferrals(): Promise<Referral[]> {
+  return request<Referral[]>('/community/my-referrals');
+}
+
+// ---------------------------------------------------------------------------
+// Missions
+// ---------------------------------------------------------------------------
+
+export interface Mission {
+  id: number;
+  title: string;
+  description: string;
+  mission_type: string;
+  xp_reward: number;
+  target_count: number;
+  active: boolean;
+}
+
+export interface WorkerMission {
+  id: number;
+  mission_id: number;
+  worker_id: number;
+  progress: number;
+  completed: boolean;
+  completed_at: string | null;
+  mission: Mission;
+}
+
+export async function listMissions(params?: Record<string, string | number>): Promise<Mission[]> {
+  return request<Mission[]>(`/missions${buildQueryString(params)}`);
+}
+
+export async function getMyMissions(): Promise<WorkerMission[]> {
+  return request<WorkerMission[]>('/missions/me');
+}
+
+export async function updateMissionProgress(workerMissionId: number, progress: number): Promise<WorkerMission> {
+  return request<WorkerMission>(`/missions/${workerMissionId}/progress`, {
+    method: 'PATCH',
+    body: JSON.stringify({ progress }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+
+export interface ReviewOut {
+  id: number;
+  company_id: number;
+  worker_id: number;
+  rating: number;
+  pay_timeliness: number;
+  work_environment: number;
+  communication: number;
+  safety_standards: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export async function createReview(body: { company_id: number; rating: number; pay_timeliness: number; work_environment: number; communication: number; safety_standards: number; comment?: string }): Promise<ReviewOut> {
+  return request<ReviewOut>('/reviews', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getCompanyReviews(companyId: number): Promise<ReviewOut[]> {
+  return request<ReviewOut[]>(`/reviews/company/${companyId}`);
+}
+
+export async function getCompanyRating(companyId: number): Promise<{ overall: number; total_reviews: number }> {
+  return request(`/reviews/company/${companyId}/rating`);
 }
 
 export { ApiError };

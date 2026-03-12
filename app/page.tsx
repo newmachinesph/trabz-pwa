@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -35,7 +36,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/logo.svg" alt="Trabz" className="h-12 mx-auto mb-4" />
+          <Image src="/logo.svg" alt="Trabz" width={48} height={48} className="h-12 mx-auto mb-4" />
           <p className="text-xl text-gray-700">
             Jobs & Gigs for Filipino Workers
           </p>

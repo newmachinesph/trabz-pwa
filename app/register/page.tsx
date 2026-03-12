@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { registerUser, sendOtp, verifyOtp, ApiError } from '@/lib/api';
@@ -23,6 +24,7 @@ export default function Register() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [otpAttempts, setOtpAttempts] = useState(0);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -46,7 +48,9 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await sendOtp(phone);
+      const cleaned = phone.replace(/\D/g, '');
+      await sendOtp(cleaned);
+      setError('');
       setStep('otp');
       setResendCooldown(60);
     } catch (err) {
@@ -91,6 +95,10 @@ export default function Register() {
 
   const handleVerifyOtp = async () => {
     setError('');
+    if (otpAttempts >= 5) {
+      setError('Too many attempts. Please request a new code.');
+      return;
+    }
     const code = otpCode.join('');
     if (code.length !== 6) {
       setError('Please enter the full 6-digit code.');
@@ -99,8 +107,11 @@ export default function Register() {
     setLoading(true);
     try {
       await verifyOtp(phone, code);
+      setError('');
+      setOtpAttempts(0);
       setStep('details');
     } catch (err) {
+      setOtpAttempts((prev) => prev + 1);
       setError(err instanceof ApiError ? err.message : 'Invalid OTP code. Please try again.');
     } finally {
       setLoading(false);
@@ -114,6 +125,7 @@ export default function Register() {
     try {
       await sendOtp(phone);
       setOtpCode(['', '', '', '', '', '']);
+      setOtpAttempts(0);
       setResendCooldown(60);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to resend OTP.');
@@ -126,7 +138,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     if (formData.password !== formData.confirmPassword) { setError('Passwords do not match.'); return; }
-    if (formData.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (formData.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
 
     setLoading(true);
     try {
@@ -311,7 +323,7 @@ export default function Register() {
             </svg>
           </Link>
         ) : (
-          <button onClick={() => { setError(''); setStep(step === 'details' ? 'otp' : 'phone'); }} className="inline-block">
+          <button onClick={() => { setError(''); setStep(step === 'details' ? 'otp' : 'phone' as Step); }} className="inline-block">
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -321,7 +333,7 @@ export default function Register() {
 
       <div className="flex-1 px-6 pb-20">
         <div className="text-center mb-6">
-          <img src="/logo.svg" alt="Trabz" className="h-10 mx-auto mb-2" />
+          <Image src="/logo.svg" alt="Trabz" width={48} height={48} className="h-10 mx-auto mb-2" />
           <p className="text-gray-600 mt-2">
             {step === 'phone' && 'Create your free account'}
             {step === 'otp' && 'Verify your phone number'}
@@ -426,10 +438,10 @@ export default function Register() {
 
             <button
               onClick={handleVerifyOtp}
-              disabled={loading || otpCode.join('').length !== 6}
+              disabled={loading || otpCode.join('').length !== 6 || otpAttempts >= 5}
               className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {loading ? 'Verifying...' : 'Verify Code'}
+              {loading ? 'Verifying...' : otpAttempts >= 5 ? 'Too many attempts. Please request a new code.' : 'Verify Code'}
             </button>
 
             <div className="text-center">

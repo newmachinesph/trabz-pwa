@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+const HIDDEN_PATHS = ['/', '/login', '/register'];
+
 export default function BottomNav() {
   const pathname = usePathname();
+
+  if (HIDDEN_PATHS.includes(pathname)) return null;
 
   const isActive = (path: string) => pathname === path;
 

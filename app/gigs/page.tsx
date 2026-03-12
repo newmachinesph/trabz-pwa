@@ -21,6 +21,7 @@ export default function Gigs() {
   const CATEGORIES = ['All', 'Delivery', 'Events', 'Shopping', 'Pet Care', 'Data Entry', 'Food Service', 'Construction'];
 
   const fetchGigs = useCallback(async () => {
+    setError('');
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page: 1, page_size: 20 };
@@ -50,7 +51,7 @@ export default function Gigs() {
       await claimGig(gigId);
       setClaimedIds((prev) => new Set(prev).add(gigId));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to claim gig.');
+      setError(err instanceof ApiError ? err.message : 'Failed to claim gig.');
     } finally {
       setClaimingId(null);
     }

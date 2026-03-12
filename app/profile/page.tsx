@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -8,7 +8,13 @@ import { updateMe, changePassword } from '@/lib/api';
 
 export default function Profile() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refresh } = useAuth();
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showResumeModal, setShowResumeModal] = useState(false);
@@ -68,11 +74,10 @@ export default function Profile() {
     try {
       await updateMe(editForm);
       setShowEditModal(false);
-      // Refresh to get updated user data
-      window.location.reload();
+      await refresh();
     } catch (error) {
       console.error('Failed to update profile:', error);
-      alert('Failed to update profile. Please try again.');
+      showToast('Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -95,17 +100,17 @@ export default function Profile() {
 
   const handlePasswordChange = async () => {
     if (!passwordForm.currentPassword || !passwordForm.newPassword) {
-      alert('Please fill in all fields');
+      showToast('Please fill in all fields');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('New passwords do not match');
+      showToast('New passwords do not match');
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
-      alert('New password must be at least 6 characters');
+    if (passwordForm.newPassword.length < 8) {
+      showToast('New password must be at least 8 characters');
       return;
     }
 
@@ -114,10 +119,10 @@ export default function Profile() {
       await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
       setShowPasswordModal(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      alert('Password changed successfully!');
+      showToast('Password changed successfully!', 'success');
     } catch (error) {
       console.error('Failed to change password:', error);
-      alert('Failed to change password. Please check your current password and try again.');
+      showToast('Failed to change password. Please check your current password and try again.');
     } finally {
       setSaving(false);
     }
@@ -171,11 +176,11 @@ export default function Profile() {
     try {
       await updateMe({ resume_data: resumeForm });
       setShowResumeModal(false);
-      alert('Resume saved successfully!');
-      window.location.reload();
+      showToast('Resume saved successfully!', 'success');
+      await refresh();
     } catch (error) {
       console.error('Failed to save resume:', error);
-      alert('Failed to save resume. Please try again.');
+      showToast('Failed to save resume. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -206,6 +211,17 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-sm w-full mx-4 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
+          toast.type === 'error'
+            ? 'bg-red-50 border border-red-200 text-red-700'
+            : 'bg-green-50 border border-green-200 text-green-700'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Edit Profile Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-20" onClick={() => setShowEditModal(false)}>
@@ -366,7 +382,7 @@ export default function Profile() {
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter new password (min 6 characters)"
+                  placeholder="Enter new password (min 8 characters)"
                 />
               </div>
 

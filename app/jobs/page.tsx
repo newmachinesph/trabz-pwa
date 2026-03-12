@@ -22,6 +22,7 @@ export default function Jobs() {
   const CATEGORIES = ['All', 'Food Service', 'Delivery', 'Retail', 'BPO', 'Logistics', 'Construction', 'Hospitality'];
 
   const fetchJobs = useCallback(async () => {
+    setError('');
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page: 1, page_size: 20 };
@@ -52,7 +53,7 @@ export default function Jobs() {
       await applyForJob(jobId);
       setAppliedIds((prev) => new Set(prev).add(jobId));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to apply.');
+      setError(err instanceof ApiError ? err.message : 'Failed to apply.');
     } finally {
       setApplyingId(null);
     }
@@ -63,7 +64,8 @@ export default function Jobs() {
     const fmt = (n: number) => `₱${n.toLocaleString()}`;
     if (min && max) return `${fmt(min)} - ${fmt(max)}`;
     if (min) return `From ${fmt(min)}`;
-    return `Up to ${fmt(max!)}`;
+    if (max) return `Up to ${fmt(max)}`;
+    return 'Salary not specified';
   };
 
   const getSalaryPeriod = (jobType: string) => {

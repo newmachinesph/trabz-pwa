@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function About() {
   return (
@@ -21,7 +22,7 @@ export default function About() {
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <img src="/logo.svg" alt="Trabz" className="h-16 mx-auto mb-6" />
+          <Image src="/logo.svg" alt="Trabz" width={48} height={48} className="h-16 mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Jobs & Gigs for Filipino Workers
           </h2>

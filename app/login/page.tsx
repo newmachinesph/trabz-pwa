@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { login, ApiError } from '@/lib/api';
@@ -46,7 +47,7 @@ export default function Login() {
 
       <div className="flex-1 flex flex-col justify-center px-6 pb-20">
         <div className="text-center mb-8">
-          <img src="/logo.svg" alt="Trabz" className="h-10 mx-auto mb-2" />
+          <Image src="/logo.svg" alt="Trabz" width={48} height={48} className="h-10 mx-auto mb-2" />
           <p className="text-gray-600 mt-2">Welcome back!</p>
         </div>
 
